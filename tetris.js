@@ -243,16 +243,20 @@ function update(time = 0) {
 // Gestion des contrôles clavier
 document.addEventListener("keydown", (e) => {
     switch (e.key) {
-        case "q":
+        case "q": // Déplacer à gauche (ZQSD)
+        case "ArrowLeft": // Flèche gauche
             movePiece(-1);
             break;
-        case "d":
+        case "d": // Déplacer à droite (ZQSD)
+        case "ArrowRight": // Flèche droite
             movePiece(1);
             break;
-        case "z":
+        case "z": // Tourner la pièce (ZQSD)
+        case "ArrowUp": // Flèche haut
             rotatePiece();
             break;
-        case "s":
+        case "s": // Faire tomber la pièce (ZQSD)
+        case "ArrowDown": // Flèche bas
             dropPiece();
             break;
     }

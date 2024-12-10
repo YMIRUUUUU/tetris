@@ -1,27 +1,44 @@
 const canvas = document.getElementById("tetrisCanvas");
 const ctx = canvas.getContext("2d");
 
-const grid = 20;
+const grid = 20; // Taille d'une cellule
 const cols = canvas.width / grid;
 const rows = canvas.height / grid;
 
 let board = Array.from({ length: rows }, () => Array(cols).fill(0));
-let currentPiece;
+let currentPiece = null;
 let nextPieces = [];
 let dropCounter = 0;
-let dropInterval = 1000;
+let dropInterval;
 let lastTime = 0;
 let score = 0;
 let lines = 0;
 
+const levelSpeeds = {
+    1: 1000,
+    2: 900,
+    3: 800,
+    4: 700,
+    5: 600,
+    6: 500,
+    7: 400,
+    8: 300,
+    9: 200,
+    10: 100,
+};
+
+const params = new URLSearchParams(window.location.search);
+const startLevel = parseInt(params.get("level")) || 1;
+dropInterval = levelSpeeds[startLevel] || 1000;
+
 const colors = {
-    1: "#FF0D72", // I
-    2: "#0DC2FF", // T
-    3: "#0DFF72", // L
-    4: "#F538FF", // J
-    5: "#FF8E0D", // Z
-    6: "#FFE138", // S
-    7: "#3877FF", // O
+    1: "#FF0D72",
+    2: "#0DC2FF",
+    3: "#0DFF72",
+    4: "#F538FF",
+    5: "#FF8E0D",
+    6: "#FFE138",
+    7: "#3877FF",
 };
 
 const shapes = {
@@ -34,24 +51,21 @@ const shapes = {
     O: [[7, 7], [7, 7]],
 };
 
-// Bag System for Random Generator
-function generateBag() {
-    const bag = ["I", "T", "L", "J", "Z", "S", "O"];
-    for (let i = bag.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [bag[i], bag[j]] = [bag[j], bag[i]];
-    }
-    return bag;
+// Initialisation du jeu
+function initializeGame() {
+    resetPiece();
+    update();
 }
 
-// Remplir le sac des prochaines pièces
-function refillNextPieces() {
-    while (nextPieces.length < 7) {
-        nextPieces.push(...generateBag());
+// Réinitialise une nouvelle pièce
+function resetPiece() {
+    currentPiece = getNextPiece();
+    if (collide()) {
+        gameOver();
     }
 }
 
-// Obtenir la prochaine pièce du sac
+// Génère une nouvelle pièce depuis la file d'attente
 function getNextPiece() {
     refillNextPieces();
     const next = nextPieces.shift();
@@ -62,26 +76,24 @@ function getNextPiece() {
     };
 }
 
-// Initialisation de la première pièce
-function resetPiece() {
-    currentPiece = getNextPiece();
-    if (collide()) {
-        resetGame(); // Si la nouvelle pièce entre en collision immédiatement, on réinitialise le jeu
+// Remplit le sac des prochaines pièces
+function refillNextPieces() {
+    while (nextPieces.length < 7) {
+        nextPieces.push(...generateBag());
     }
 }
 
-// Gestion des collisions
-function collide() {
-    return currentPiece.shape.some((row, y) =>
-        row.some((value, x) =>
-            value &&
-            (board[currentPiece.y + y] &&
-                board[currentPiece.y + y][currentPiece.x + x]) !== 0
-        )
-    );
+// Génère un sac aléatoire (bag system)
+function generateBag() {
+    const bag = ["I", "T", "L", "J", "Z", "S", "O"];
+    for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+    return bag;
 }
 
-// Fusionne la pièce dans le tableau principal
+// Fusionne la pièce courante dans le plateau
 function merge() {
     currentPiece.shape.forEach((row, y) =>
         row.forEach((value, x) => {
@@ -94,40 +106,84 @@ function merge() {
     clearLines();
 }
 
-// Supprime les lignes complètes
+// Supprime les lignes complètes avec animation
 function clearLines() {
-    const linesToClear = board.filter(row => row.every(cell => cell !== 0));
-    const clearedLines = linesToClear.length;
-
-    if (clearedLines > 0) {
-        board = board.filter(row => row.some(cell => cell === 0));
-        while (board.length < rows) {
-            board.unshift(Array(cols).fill(0));
+    const linesToClear = [];
+    board.forEach((row, y) => {
+        if (row.every(cell => cell !== 0)) {
+            linesToClear.push(y);
         }
-        score += calculateScore(clearedLines);
-        lines += clearedLines;
-        updateStats();
+    });
+
+    if (linesToClear.length > 0) {
+        // Animation : faire clignoter les lignes
+        let flashCount = 0;
+        const flashInterval = setInterval(() => {
+            flashCount++;
+            linesToClear.forEach(y => {
+                board[y] = flashCount % 2 === 0 ? Array(cols).fill(0) : Array(cols).fill(1);
+            });
+            drawBoard();
+
+            if (flashCount === 6) {
+                clearInterval(flashInterval);
+                // Supprimer les lignes après l'animation
+                linesToClear.forEach(y => {
+                    board.splice(y, 1);
+                    board.unshift(Array(cols).fill(0));
+                });
+                lines += linesToClear.length;
+                score += linesToClear.length * 100;
+            }
+        }, 100);
     }
 }
 
-// Calcul du score selon les lignes complétées
-function calculateScore(linesCleared) {
-    switch (linesCleared) {
-        case 1: return 100;
-        case 2: return 300;
-        case 3: return 500;
-        case 4: return 800; // Tetris!
-        default: return 0;
+// Gère la fin du jeu
+function gameOver() {
+    const playerName = prompt("Game Over! Enter your name:");
+    if (playerName) {
+        saveScore(playerName, score);
+    }
+    resetGame();
+}
+
+// Sauvegarde le score dans le localStorage
+function saveScore(playerName, score) {
+    const leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+    leaderboard.push({ name: playerName, score: score });
+    localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+}
+
+// Réinitialise le jeu
+function resetGame() {
+    board = Array.from({ length: rows }, () => Array(cols).fill(0));
+    score = 0;
+    lines = 0;
+    resetPiece();
+}
+
+// Fait descendre la pièce
+function dropPiece() {
+    currentPiece.y++;
+    if (collide()) {
+        currentPiece.y--;
+        merge();
     }
 }
 
-// Mise à jour des stats
-function updateStats() {
-    document.getElementById("score").textContent = score;
-    document.getElementById("lines").textContent = lines;
+// Vérifie les collisions
+function collide() {
+    return currentPiece.shape.some((row, y) =>
+        row.some((value, x) =>
+            value &&
+            (board[currentPiece.y + y] &&
+                board[currentPiece.y + y][currentPiece.x + x]) !== 0
+        )
+    );
 }
 
-// Déplacement de la pièce
+// Déplace la pièce courante
 function movePiece(dir) {
     currentPiece.x += dir;
     if (collide()) {
@@ -135,7 +191,7 @@ function movePiece(dir) {
     }
 }
 
-// Rotation de la pièce
+// Fait tourner la pièce
 function rotatePiece() {
     const prevShape = currentPiece.shape.map(row => [...row]);
     currentPiece.shape = currentPiece.shape[0].map((_, i) =>
@@ -146,16 +202,7 @@ function rotatePiece() {
     }
 }
 
-// Faire tomber la pièce
-function dropPiece() {
-    currentPiece.y++;
-    if (collide()) {
-        currentPiece.y--;
-        merge(); // La pièce est immédiatement fusionnée lorsqu'elle touche quelque chose
-    }
-}
-
-// Dessine le tableau principal
+// Dessine le plateau de jeu
 function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     board.forEach((row, y) => row.forEach((value, x) => {
@@ -178,17 +225,7 @@ function drawBlock(x, y, color) {
     ctx.strokeRect(x * grid, y * grid, grid, grid);
 }
 
-// Réinitialisation du jeu
-function resetGame() {
-    board = Array.from({ length: rows }, () => Array(cols).fill(0));
-    score = 0;
-    lines = 0;
-    dropInterval = 1000;
-    updateStats();
-    resetPiece();
-}
-
-// Mise à jour des états
+// Met à jour l'état du jeu
 function update(time = 0) {
     const deltaTime = time - lastTime;
     lastTime = time;
@@ -203,7 +240,7 @@ function update(time = 0) {
     requestAnimationFrame(update);
 }
 
-// Écoute des touches
+// Gestion des contrôles clavier
 document.addEventListener("keydown", (e) => {
     switch (e.key) {
         case "q":
@@ -221,6 +258,5 @@ document.addEventListener("keydown", (e) => {
     }
 });
 
-// Lancement du jeu
-resetPiece();
-update();
+// Lancer le jeu à la fin du chargement de la page
+document.addEventListener("DOMContentLoaded", initializeGame);

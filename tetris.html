@@ -4,26 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tetris</title>
-    <link rel="stylesheet" href="tetris.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="tetrisCanvas" width="300" height="600"></canvas>
-        <div id="stats">
-            <p id="score">Score: 0</p>
-            <p id="lines">Lines: 0</p>
+    <div class="game-container">
+        <canvas id="tetrisCanvas" width="200" height="400"></canvas>
+        <div class="info">
+            <p>Score: <span id="score">0</span></p>
+            <p>Lines: <span id="lines">0</span></p>
         </div>
     </div>
-
-    <footer id="dedication">
-        <p>
-            Dédicace à Sonia la goat, à Karl Marx, à la Commune, à Rosa Luxemburg. 
-            Je dédie le code de ce projet à l'international communiste et ouvrière, 
-            à Louise Michel, et aux communistes, aux anarchistes et aux ouvriers du monde entier. 
-            La lutte portera ses fruits, gardez la foi, et le grand soir arrivera.
-        </p>
-    </footer>
-
     <script src="tetris.js"></script>
 </body>
 </html>

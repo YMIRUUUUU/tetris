@@ -13,6 +13,7 @@ let dropInterval;
 let lastTime = 0;
 let score = 0;
 let lines = 0;
+let gameRunning = true;
 
 const levelSpeeds = {
     1: 1000,
@@ -60,7 +61,7 @@ function initializeGame() {
 // Réinitialise une nouvelle pièce
 function resetPiece() {
     currentPiece = getNextPiece();
-    if (collide()) {
+    if (collide(true)) {
         gameOver();
     }
 }
@@ -102,8 +103,8 @@ function merge() {
             }
         })
     );
-    resetPiece();
     clearLines();
+    resetPiece();
 }
 
 // Supprime les lignes complètes avec animation
@@ -116,14 +117,17 @@ function clearLines() {
     });
 
     if (linesToClear.length > 0) {
+        const isTetris = linesToClear.length === 4;
+        const flashColor = isTetris ? "#FFD700" : "#FFFFFF";
+
         // Animation : faire clignoter les lignes
         let flashCount = 0;
         const flashInterval = setInterval(() => {
             flashCount++;
             linesToClear.forEach(y => {
-                board[y] = flashCount % 2 === 0 ? Array(cols).fill(0) : Array(cols).fill(1);
+                board[y] = flashCount % 2 === 0 ? Array(cols).fill(0) : Array(cols).fill(isTetris ? 8 : 1);
             });
-            drawBoard();
+            drawBoard(flashColor);
 
             if (flashCount === 6) {
                 clearInterval(flashInterval);
@@ -132,39 +136,74 @@ function clearLines() {
                     board.splice(y, 1);
                     board.unshift(Array(cols).fill(0));
                 });
+
+                // Met à jour le score
                 lines += linesToClear.length;
-                score += linesToClear.length * 100;
+                score += isTetris ? 800 : linesToClear.length * 200;
+                updateScoreDisplay();
             }
         }, 100);
     }
 }
 
-// Gère la fin du jeu
-function gameOver() {
-    const playerName = prompt("Game Over! Enter your name:");
-    if (playerName) {
-        saveScore(playerName, score);
-    }
-    resetGame();
+// Met à jour l'affichage du score
+function updateScoreDisplay() {
+    const scoreElement = document.getElementById("score");
+    const linesElement = document.getElementById("lines");
+    if (scoreElement) scoreElement.textContent = score;
+    if (linesElement) linesElement.textContent = lines;
 }
 
-// Sauvegarde le score dans le localStorage
-function saveScore(playerName, score) {
-    const leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
-    leaderboard.push({ name: playerName, score: score });
-    localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+// Gère la fin du jeu
+function gameOver() {
+    gameRunning = false;
+    drawGameOverScreen();
+}
+
+// Affiche l'écran de Game Over avec des options
+function drawGameOverScreen() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "red";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 40);
+
+    ctx.fillStyle = "white";
+    ctx.fillText("Press 'R' to Restart", canvas.width / 2, canvas.height / 2);
+    ctx.fillText("Press 'M' to return to Menu", canvas.width / 2, canvas.height / 2 + 40);
+
+    // Gestion des touches pour redémarrer ou revenir au menu
+    document.addEventListener("keydown", handleGameOverInput);
+}
+
+function handleGameOverInput(e) {
+    if (e.key === "r" || e.key === "R") {
+        document.removeEventListener("keydown", handleGameOverInput);
+        resetGame();
+    } else if (e.key === "m" || e.key === "M") {
+        document.removeEventListener("keydown", handleGameOverInput);
+        window.location.href = "index.html"; // Retour au menu principal
+    }
 }
 
 // Réinitialise le jeu
 function resetGame() {
+    gameRunning = true;
     board = Array.from({ length: rows }, () => Array(cols).fill(0));
     score = 0;
     lines = 0;
+    updateScoreDisplay();
     resetPiece();
+    update();
 }
 
 // Fait descendre la pièce
 function dropPiece() {
+    if (!gameRunning) return;
+
     currentPiece.y++;
     if (collide()) {
         currentPiece.y--;
@@ -173,18 +212,21 @@ function dropPiece() {
 }
 
 // Vérifie les collisions
-function collide() {
+function collide(isSpawn = false) {
     return currentPiece.shape.some((row, y) =>
         row.some((value, x) =>
             value &&
             (board[currentPiece.y + y] &&
-                board[currentPiece.y + y][currentPiece.x + x]) !== 0
+                board[currentPiece.y + y][currentPiece.x + x]) !== 0 ||
+            (isSpawn && currentPiece.y + y < 0) // Vérifie si la pièce atteint le plafond
         )
     );
 }
 
 // Déplace la pièce courante
 function movePiece(dir) {
+    if (!gameRunning) return;
+
     currentPiece.x += dir;
     if (collide()) {
         currentPiece.x -= dir;
@@ -193,6 +235,8 @@ function movePiece(dir) {
 
 // Fait tourner la pièce
 function rotatePiece() {
+    if (!gameRunning) return;
+
     const prevShape = currentPiece.shape.map(row => [...row]);
     currentPiece.shape = currentPiece.shape[0].map((_, i) =>
         currentPiece.shape.map(row => row[i]).reverse()
@@ -203,11 +247,11 @@ function rotatePiece() {
 }
 
 // Dessine le plateau de jeu
-function drawBoard() {
+function drawBoard(flashColor = null) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     board.forEach((row, y) => row.forEach((value, x) => {
         if (value) {
-            drawBlock(x, y, colors[value]);
+            drawBlock(x, y, flashColor || colors[value]);
         }
     }));
     currentPiece.shape.forEach((row, y) => row.forEach((value, x) => {
@@ -227,6 +271,8 @@ function drawBlock(x, y, color) {
 
 // Met à jour l'état du jeu
 function update(time = 0) {
+    if (!gameRunning) return;
+
     const deltaTime = time - lastTime;
     lastTime = time;
     dropCounter += deltaTime;
@@ -242,21 +288,23 @@ function update(time = 0) {
 
 // Gestion des contrôles clavier
 document.addEventListener("keydown", (e) => {
+    if (!gameRunning) return;
+
     switch (e.key) {
-        case "q": // Déplacer à gauche (ZQSD)
-        case "ArrowLeft": // Flèche gauche
+        case "q":
+        case "ArrowLeft":
             movePiece(-1);
             break;
-        case "d": // Déplacer à droite (ZQSD)
-        case "ArrowRight": // Flèche droite
+        case "d":
+        case "ArrowRight":
             movePiece(1);
             break;
-        case "z": // Tourner la pièce (ZQSD)
-        case "ArrowUp": // Flèche haut
+        case "z":
+        case "ArrowUp":
             rotatePiece();
             break;
-        case "s": // Faire tomber la pièce (ZQSD)
-        case "ArrowDown": // Flèche bas
+        case "s":
+        case "ArrowDown":
             dropPiece();
             break;
     }

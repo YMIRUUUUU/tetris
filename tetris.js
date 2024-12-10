@@ -15,6 +15,11 @@ let score = 0;
 let lines = 0;
 let gameRunning = true;
 
+// Musique de fond
+const music = new Audio("theme1.mp3");
+music.loop = true; // Répéter la musique en boucle
+let musicStarted = false;
+
 const levelSpeeds = {
     1: 1000,
     2: 900,
@@ -56,6 +61,22 @@ const shapes = {
 function initializeGame() {
     resetPiece();
     update();
+
+    // Ajouter un écouteur pour démarrer la musique lors de la première interaction utilisateur
+    document.addEventListener("click", startMusic);
+    document.addEventListener("keydown", startMusic);
+}
+
+// Fonction pour démarrer la musique après interaction utilisateur
+function startMusic() {
+    if (!musicStarted) {
+        music.play();
+        musicStarted = true;
+
+        // Supprimer les écouteurs une fois que la musique a démarré
+        document.removeEventListener("click", startMusic);
+        document.removeEventListener("keydown", startMusic);
+    }
 }
 
 // Réinitialise une nouvelle pièce
@@ -117,32 +138,32 @@ function clearLines() {
     });
 
     if (linesToClear.length > 0) {
-        const isTetris = linesToClear.length === 4;
-        const flashColor = isTetris ? "#FFD700" : "#FFFFFF";
+        const isTetris = linesToClear.length === 4; // Vérifie si c'est un Tetris
+        const flashColor = isTetris ? "#FFD700" : "#FFFFFF"; // Or pour un Tetris, blanc pour le reste
 
-        // Animation : faire clignoter les lignes
+        // Animation des lignes clignotantes
         let flashCount = 0;
         const flashInterval = setInterval(() => {
             flashCount++;
             linesToClear.forEach(y => {
-                board[y] = flashCount % 2 === 0 ? Array(cols).fill(0) : Array(cols).fill(isTetris ? 8 : 1);
+                board[y] = flashCount % 2 === 0 ? Array(cols).fill(0) : Array(cols).fill(8); // 8 pour simuler un effet de clignotement
             });
-            drawBoard(flashColor);
+            drawBoard(flashColor); // Dessine le plateau avec la couleur de flash
 
             if (flashCount === 6) {
                 clearInterval(flashInterval);
-                // Supprimer les lignes après l'animation
+                // Supprime les lignes après l'animation
                 linesToClear.forEach(y => {
                     board.splice(y, 1);
                     board.unshift(Array(cols).fill(0));
                 });
 
-                // Met à jour le score
+                // Met à jour le score et les lignes
                 lines += linesToClear.length;
-                score += isTetris ? 800 : linesToClear.length * 200;
+                score += isTetris ? 800 : linesToClear.length * 200; // 800 pour un Tetris, 200 par ligne normale
                 updateScoreDisplay();
             }
-        }, 100);
+        }, 100); // Clignotement toutes les 100ms
     }
 }
 
@@ -150,13 +171,14 @@ function clearLines() {
 function updateScoreDisplay() {
     const scoreElement = document.getElementById("score");
     const linesElement = document.getElementById("lines");
-    if (scoreElement) scoreElement.textContent = score;
-    if (linesElement) linesElement.textContent = lines;
+    if (scoreElement) scoreElement.textContent = `Score: ${score}`;
+    if (linesElement) linesElement.textContent = `Lines: ${lines}`;
 }
 
 // Gère la fin du jeu
 function gameOver() {
     gameRunning = false;
+    music.pause();
     drawGameOverScreen();
 }
 
@@ -175,7 +197,6 @@ function drawGameOverScreen() {
     ctx.fillText("Press 'R' to Restart", canvas.width / 2, canvas.height / 2);
     ctx.fillText("Press 'M' to return to Menu", canvas.width / 2, canvas.height / 2 + 40);
 
-    // Gestion des touches pour redémarrer ou revenir au menu
     document.addEventListener("keydown", handleGameOverInput);
 }
 
@@ -195,9 +216,9 @@ function resetGame() {
     board = Array.from({ length: rows }, () => Array(cols).fill(0));
     score = 0;
     lines = 0;
-    updateScoreDisplay();
     resetPiece();
     update();
+    music.play();
 }
 
 // Fait descendre la pièce
@@ -246,7 +267,7 @@ function rotatePiece() {
     }
 }
 
-// Dessine le plateau de jeu
+// Dessine le plateau avec une couleur spéciale pour les animations
 function drawBoard(flashColor = null) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     board.forEach((row, y) => row.forEach((value, x) => {

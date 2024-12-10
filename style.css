@@ -1,3 +1,4 @@
+/* Style global */
 body {
     display: flex;
     justify-content: center;
@@ -9,11 +10,14 @@ body {
     color: white;
 }
 
+/* Canvas du jeu */
 canvas {
     border: 2px solid white;
     background-color: black;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
+/* Infos du jeu */
 .info {
     margin-top: 20px;
     text-align: center;
@@ -25,13 +29,58 @@ canvas {
     color: #FFD700;
 }
 
-/* Blocs avec ombrage et effet 3D */
-canvas {
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    background: linear-gradient(145deg, #000000, #1a1a1a);
+/* Leaderboard styles */
+.leaderboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #121212;
+    color: white;
+    font-family: Arial, sans-serif;
 }
 
-canvas.block {
-    border-radius: 2px;
-    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+table {
+    border-collapse: collapse;
+    width: 80%;
+    margin: 20px 0;
+    color: white;
+}
+
+th, td {
+    border: 1px solid #ffffff;
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background-color: #333;
+    color: #FFD700;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background-color: #FFD700;
+    border: none;
+    color: black;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #FFC107;
+}
+/* Style pour l'affichage de la pièce suivante */
+.next-piece {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#nextCanvas {
+    border: 1px solid white;
+    background-color: black;
+    display: block;
+    margin: 0 auto;
 }

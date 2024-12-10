@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Tetris</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="welcome-container">
+        <h1>Welcome to Ultimate Tetris</h1>
+        <p>Select your starting level and press play to begin.</p>
+        <div class="level-selection">
+            <label for="levelSelect">Starting Level:</label>
+            <select id="levelSelect">
+                <option value="1">Level 1</option>
+                <option value="2">Level 2</option>
+                <option value="3">Level 3</option>
+                <option value="4">Level 4</option>
+                <option value="5">Level 5</option>
+            </select>
+        </div>
+        <button id="startGame" class="play-button">Play</button>
+    </div>
+
+    <script>
+        document.getElementById("startGame").addEventListener("click", () => {
+            const level = document.getElementById("levelSelect").value;
+            window.location.href = `tetris.html?level=${level}`;
+        });
+    </script>
+</body>
+</html>

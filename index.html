@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Level</title>
+    <title>Ultimate Tetris</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,7 +27,7 @@
         </div>
         <div class="buttons">
             <button id="startGame" class="play-button">Play</button>
-            <button id="viewLeaderboard" class="play-button">View Leaderboard</button>
+            <button id="leaderboardButton" class="play-button">Leaderboard</button>
         </div>
     </div>
 
@@ -37,7 +37,7 @@
             window.location.href = `tetris.html?level=${level}`;
         });
 
-        document.getElementById("viewLeaderboard").addEventListener("click", () => {
+        document.getElementById("leaderboardButton").addEventListener("click", () => {
             window.location.href = `leaderboard.html`;
         });
     </script>

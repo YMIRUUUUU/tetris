@@ -1,5 +1,9 @@
 const canvas = document.getElementById("tetrisCanvas");
 const ctx = canvas.getContext("2d");
+const holdCanvas = document.getElementById("holdCanvas");
+const holdCtx = holdCanvas ? holdCanvas.getContext("2d") : null;
+const nextCanvases = document.querySelectorAll(".next");
+const nextCtxs = Array.from(nextCanvases).map(c => c.getContext("2d"));
 
 const grid = 20; // Taille d'une cellule
 const cols = canvas.width / grid;
@@ -14,6 +18,10 @@ let lastTime = 0;
 let score = 0;
 let lines = 0;
 let gameRunning = true;
+let isPaused = false;
+let muted = false;
+let holdPiece = null;
+let holdUsed = false;
 
 // Musique de fond
 const music = new Audio("theme1.mp3");
@@ -65,11 +73,15 @@ function initializeGame() {
     // Ajouter un écouteur pour démarrer la musique lors de la première interaction utilisateur
     document.addEventListener("click", startMusic);
     document.addEventListener("keydown", startMusic);
+    const muteButton = document.getElementById("muteButton");
+    if (muteButton) {
+        muteButton.addEventListener("click", toggleMute);
+    }
 }
 
 // Fonction pour démarrer la musique après interaction utilisateur
 function startMusic() {
-    if (!musicStarted) {
+    if (!musicStarted && !muted) {
         music.play();
         musicStarted = true;
 
@@ -85,6 +97,9 @@ function resetPiece() {
     if (collide(true)) {
         gameOver();
     }
+    holdUsed = false;
+    drawHoldPiece();
+    drawNextPieces();
 }
 
 // Génère une nouvelle pièce depuis la file d'attente
@@ -92,6 +107,7 @@ function getNextPiece() {
     refillNextPieces();
     const next = nextPieces.shift();
     return {
+        type: next,
         shape: shapes[next],
         x: Math.floor(cols / 2) - 1,
         y: 0,
@@ -175,10 +191,25 @@ function updateScoreDisplay() {
     if (linesElement) linesElement.textContent = `${lines}`;
 }
 
+function saveScore() {
+    const name = prompt("Enter your name:");
+    if (!name) return;
+    const leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+    leaderboard.push({
+        name,
+        score,
+        lines,
+        level: startLevel,
+        date: new Date().toLocaleDateString(),
+    });
+    localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+}
+
 // Gère la fin du jeu
 function gameOver() {
     gameRunning = false;
     music.pause();
+    saveScore();
     drawGameOverScreen();
 }
 
@@ -213,12 +244,13 @@ function handleGameOverInput(e) {
 // Réinitialise le jeu
 function resetGame() {
     gameRunning = true;
+    isPaused = false;
     board = Array.from({ length: rows }, () => Array(cols).fill(0));
     score = 0;
     lines = 0;
     resetPiece();
     update();
-    music.play();
+    if (!muted) music.play();
 }
 
 // Fait descendre la pièce
@@ -232,16 +264,36 @@ function dropPiece() {
     }
 }
 
+function hardDrop() {
+    if (!gameRunning) return;
+    currentPiece.y = getGhostY();
+    merge();
+}
+
+function holdCurrent() {
+    if (holdUsed) return;
+    if (!holdPiece) {
+        holdPiece = currentPiece.type;
+        currentPiece = getNextPiece();
+    } else {
+        const temp = holdPiece;
+        holdPiece = currentPiece.type;
+        currentPiece = {
+            type: temp,
+            shape: shapes[temp],
+            x: Math.floor(cols / 2) - 1,
+            y: 0,
+        };
+    }
+    holdUsed = true;
+    drawHoldPiece();
+    drawNextPieces();
+    if (collide(true)) gameOver();
+}
+
 // Vérifie les collisions
 function collide(isSpawn = false) {
-    return currentPiece.shape.some((row, y) =>
-        row.some((value, x) =>
-            value &&
-            (board[currentPiece.y + y] &&
-                board[currentPiece.y + y][currentPiece.x + x]) !== 0 ||
-            (isSpawn && currentPiece.y + y < 0) // Vérifie si la pièce atteint le plafond
-        )
-    );
+    return collideAt(currentPiece.shape, currentPiece.x, currentPiece.y, isSpawn);
 }
 
 // Déplace la pièce courante
@@ -267,6 +319,63 @@ function rotatePiece() {
     }
 }
 
+function collideAt(shape, posX, posY, isSpawn = false) {
+    return shape.some((row, y) =>
+        row.some((value, x) =>
+            value && (
+                posX + x < 0 ||
+                posX + x >= cols ||
+                posY + y >= rows ||
+                (board[posY + y] && board[posY + y][posX + x]) !== 0 ||
+                (isSpawn && posY + y < 0)
+            )
+        )
+    );
+}
+
+function getGhostY() {
+    let ghostY = currentPiece.y;
+    while (!collideAt(currentPiece.shape, currentPiece.x, ghostY + 1)) {
+        ghostY++;
+    }
+    return ghostY;
+}
+
+function togglePause() {
+    if (!gameRunning) return;
+    isPaused = !isPaused;
+    if (isPaused) {
+        drawPauseScreen();
+    } else {
+        lastTime = performance.now();
+        update();
+    }
+}
+
+function drawPauseScreen() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Paused", canvas.width / 2, canvas.height / 2);
+    ctx.fillText("Press 'P' to resume", canvas.width / 2, canvas.height / 2 + 30);
+}
+
+function toggleMute() {
+    muted = !muted;
+    const muteButton = document.getElementById("muteButton");
+    if (muted) {
+        music.pause();
+        if (muteButton) muteButton.textContent = "Unmute";
+    } else {
+        if (musicStarted) {
+            music.play();
+        }
+        if (muteButton) muteButton.textContent = "Mute";
+    }
+}
+
 // Dessine le plateau avec une couleur spéciale pour les animations
 function drawBoard(flashColor = null) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -275,9 +384,53 @@ function drawBoard(flashColor = null) {
             drawBlock(x, y, flashColor || colors[value]);
         }
     }));
+    const ghostY = getGhostY();
+    currentPiece.shape.forEach((row, y) => row.forEach((value, x) => {
+        if (value) {
+            ctx.fillStyle = "rgba(200,200,200,0.4)";
+            ctx.fillRect((currentPiece.x + x) * grid, (ghostY + y) * grid, grid, grid);
+            ctx.strokeStyle = "rgba(0,0,0,0.3)";
+            ctx.strokeRect((currentPiece.x + x) * grid, (ghostY + y) * grid, grid, grid);
+        }
+    }));
     currentPiece.shape.forEach((row, y) => row.forEach((value, x) => {
         if (value) {
             drawBlock(currentPiece.x + x, currentPiece.y + y, colors[value]);
+        }
+    }));
+}
+
+function drawNextPieces() {
+    if (nextCtxs.length === 0) return;
+    nextCtxs.forEach(ctx => ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height));
+    nextCtxs.forEach((ctx, idx) => {
+        const pieceType = nextPieces[idx];
+        if (!pieceType) return;
+        const shape = shapes[pieceType];
+        shape.forEach((row, y) => row.forEach((value, x) => {
+            if (value) {
+                const color = colors[value];
+                ctx.fillStyle = color;
+                ctx.fillRect(x * grid, y * grid, grid, grid);
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(x * grid, y * grid, grid, grid);
+            }
+        }));
+    });
+}
+
+function drawHoldPiece() {
+    if (!holdCtx) return;
+    holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+    if (!holdPiece) return;
+    const shape = shapes[holdPiece];
+    shape.forEach((row, y) => row.forEach((value, x) => {
+        if (value) {
+            const color = colors[value];
+            holdCtx.fillStyle = color;
+            holdCtx.fillRect(x * grid, y * grid, grid, grid);
+            holdCtx.strokeStyle = "black";
+            holdCtx.strokeRect(x * grid, y * grid, grid, grid);
         }
     }));
 }
@@ -293,6 +446,10 @@ function drawBlock(x, y, color) {
 // Met à jour l'état du jeu
 function update(time = 0) {
     if (!gameRunning) return;
+    if (isPaused) {
+        requestAnimationFrame(update);
+        return;
+    }
 
     const deltaTime = time - lastTime;
     lastTime = time;
@@ -327,6 +484,22 @@ document.addEventListener("keydown", (e) => {
         case "s":
         case "ArrowDown":
             dropPiece();
+            break;
+        case " ":
+            hardDrop();
+            break;
+        case "Shift":
+        case "c":
+        case "C":
+            holdCurrent();
+            break;
+        case "p":
+        case "P":
+            togglePause();
+            break;
+        case "m":
+        case "M":
+            toggleMute();
             break;
     }
 });

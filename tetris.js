@@ -171,8 +171,8 @@ function clearLines() {
 function updateScoreDisplay() {
     const scoreElement = document.getElementById("score");
     const linesElement = document.getElementById("lines");
-    if (scoreElement) scoreElement.textContent = `Score: ${score}`;
-    if (linesElement) linesElement.textContent = `Lines: ${lines}`;
+    if (scoreElement) scoreElement.textContent = `${score}`;
+    if (linesElement) linesElement.textContent = `${lines}`;
 }
 
 // Gère la fin du jeu

@@ -9,10 +9,28 @@
 <body>
     <div class="game-container">
         <canvas id="tetrisCanvas" width="200" height="400"></canvas>
-        <div class="info">
-            <p>Score: <span id="score">0</span></p>
-            <p>Lines: <span id="lines">0</span></p>
+        <div class="side-panel">
+            <div class="info">
+                <p>Score: <span id="score">0</span></p>
+                <p>Lines: <span id="lines">0</span></p>
+            </div>
+            <div class="hold">
+                <p>Hold:</p>
+                <canvas id="holdCanvas" width="80" height="80"></canvas>
+            </div>
+            <div class="next-container">
+                <p>Next:</p>
+                <canvas class="next" width="80" height="80"></canvas>
+                <canvas class="next" width="80" height="80"></canvas>
+                <canvas class="next" width="80" height="80"></canvas>
+            </div>
+            <button id="muteButton" class="play-button">Mute</button>
         </div>
+    </div>
+    <div id="gameOverOverlay" class="overlay hidden">
+        <h2>Game Over</h2>
+        <button id="restartButton">Restart</button>
+        <button id="menuButton">Menu</button>
     </div>
     <script src="tetris.js"></script>
 </body>

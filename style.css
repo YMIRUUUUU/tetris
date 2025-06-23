@@ -136,3 +136,8 @@ button:hover {
     z-index: 1000;
     display: none;
 }
+
+.debug-toggle {
+    margin-top: 10px;
+    text-align: center;
+}

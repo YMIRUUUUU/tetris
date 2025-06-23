@@ -29,27 +29,34 @@
             <button id="startGame" class="play-button">Play</button>
             <button id="leaderboardButton" class="play-button">Leaderboard</button>
         </div>
+        <div class="debug-toggle">
+            <label><input type="checkbox" id="debugToggle"> Debug Mode</label>
+        </div>
     </div>
     <div id="debugMessage" class="debug-message">Mode Debug - Dédicace à Ethan</div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const debugFlag = urlParams.get("debug");
+        const debugToggle = document.getElementById("debugToggle");
+
+        if (debugFlag === "true") {
+            debugToggle.checked = true;
+            document.getElementById("debugMessage").style.display = "block";
+        }
 
         document.getElementById("startGame").addEventListener("click", () => {
             const level = document.getElementById("levelSelect").value;
-            const debugQuery = debugFlag ? `&debug=${debugFlag}` : "";
+            const debug = debugToggle.checked ? "true" : (debugFlag || "");
+            const debugQuery = debug ? `&debug=${debug}` : "";
             window.location.href = `tetris.html?level=${level}${debugQuery}`;
         });
 
         document.getElementById("leaderboardButton").addEventListener("click", () => {
-            const debugQuery = debugFlag ? `?debug=${debugFlag}` : "";
+            const debug = debugToggle.checked ? "true" : (debugFlag || "");
+            const debugQuery = debug ? `?debug=${debug}` : "";
             window.location.href = `leaderboard.html${debugQuery}`;
         });
-
-        if (debugFlag === "true") {
-            document.getElementById("debugMessage").style.display = "block";
-        }
     </script>
 </body>
 </html>

@@ -32,13 +32,18 @@
     </div>
 
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const debugFlag = urlParams.get("debug");
+
         document.getElementById("startGame").addEventListener("click", () => {
             const level = document.getElementById("levelSelect").value;
-            window.location.href = `tetris.html?level=${level}`;
+            const debugQuery = debugFlag ? `&debug=${debugFlag}` : "";
+            window.location.href = `tetris.html?level=${level}${debugQuery}`;
         });
 
         document.getElementById("leaderboardButton").addEventListener("click", () => {
-            window.location.href = `leaderboard.html`;
+            const debugQuery = debugFlag ? `?debug=${debugFlag}` : "";
+            window.location.href = `leaderboard.html${debugQuery}`;
         });
     </script>
 </body>

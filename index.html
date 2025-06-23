@@ -30,6 +30,7 @@
             <button id="leaderboardButton" class="play-button">Leaderboard</button>
         </div>
     </div>
+    <div id="debugMessage" class="debug-message">Mode Debug - Dédicace à Ethan</div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
@@ -45,6 +46,10 @@
             const debugQuery = debugFlag ? `?debug=${debugFlag}` : "";
             window.location.href = `leaderboard.html${debugQuery}`;
         });
+
+        if (debugFlag === "true") {
+            document.getElementById("debugMessage").style.display = "block";
+        }
     </script>
 </body>
 </html>

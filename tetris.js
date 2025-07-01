@@ -476,8 +476,11 @@ function clearLastTenLines() {
     for (let i = 0; i < 10; i++) {
         board.unshift(Array(cols).fill(0));
     }
+ e2x7f7-codex/ajouter-option-suppression-lignes-et-animation-fusée
     lines = Math.max(0, lines - 10);
     updateScoreDisplay();
+
+ main
     lineClearAdUsed = true;
     drawBoard();
 }

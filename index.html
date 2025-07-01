@@ -45,6 +45,10 @@
             document.getElementById("debugMessage").style.display = "block";
         }
 
+        debugToggle.addEventListener("change", () => {
+            document.getElementById("debugMessage").style.display = debugToggle.checked ? "block" : "none";
+        });
+
         document.getElementById("startGame").addEventListener("click", () => {
             const level = document.getElementById("levelSelect").value;
             const debug = debugToggle.checked ? "true" : (debugFlag || "");

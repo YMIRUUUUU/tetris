@@ -261,7 +261,8 @@ function handleGameOverInput(e) {
         resetGame();
     } else if (e.key === "m" || e.key === "M") {
         document.removeEventListener("keydown", handleGameOverInput);
-        window.location.href = "index.html"; // Retour au menu principal
+        const debugQuery = isDebug ? "?debug=true" : "";
+        window.location.href = `index.html${debugQuery}`; // Retour au menu principal
     }
 }
 
@@ -476,11 +477,7 @@ function clearLastTenLines() {
     for (let i = 0; i < 10; i++) {
         board.unshift(Array(cols).fill(0));
     }
- e2x7f7-codex/ajouter-option-suppression-lignes-et-animation-fusée
-    lines = Math.max(0, lines - 10);
-    updateScoreDisplay();
 
- main
     lineClearAdUsed = true;
     drawBoard();
 }

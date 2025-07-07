@@ -477,8 +477,7 @@ function clearLastTenLines() {
     for (let i = 0; i < 10; i++) {
         board.unshift(Array(cols).fill(0));
     }
-    lines = Math.max(0, lines - 10);
-    updateScoreDisplay();
+
     lineClearAdUsed = true;
     drawBoard();
 }

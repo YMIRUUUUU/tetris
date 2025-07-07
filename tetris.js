@@ -22,6 +22,8 @@ let isPaused = false;
 let muted = false;
 let holdPiece = null;
 let holdUsed = false;
+let rocketShown = false; // track if rocket animation already launched
+let isDebug = false; // debug mode flag
 
 // Musique de fond
 const music = new Audio("theme1.mp3");
@@ -44,6 +46,7 @@ const levelSpeeds = {
 const params = new URLSearchParams(window.location.search);
 const startLevel = parseInt(params.get("level")) || 1;
 dropInterval = levelSpeeds[startLevel] || 1000;
+isDebug = params.get("debug") === "true";
 
 const colors = {
     1: "#FF0D72",
@@ -76,6 +79,22 @@ function initializeGame() {
     const muteButton = document.getElementById("muteButton");
     if (muteButton) {
         muteButton.addEventListener("click", toggleMute);
+    }
+
+    const clearButton = document.getElementById("clearLinesButton");
+    if (clearButton) {
+        clearButton.addEventListener("click", clearLastTenLines);
+    }
+
+    if (isDebug) {
+        const debugMsg = document.getElementById("debugMessage");
+        if (debugMsg) debugMsg.style.display = "block";
+        const panel = document.getElementById("debugPanel");
+        if (panel) panel.style.display = "flex";
+        const dbgTet = document.getElementById("debugTetris");
+        const dbgRkt = document.getElementById("debugRocket");
+        if (dbgTet) dbgTet.addEventListener("click", forceTetris);
+        if (dbgRkt) dbgRkt.addEventListener("click", launchRocket);
     }
 }
 
@@ -189,6 +208,9 @@ function updateScoreDisplay() {
     const linesElement = document.getElementById("lines");
     if (scoreElement) scoreElement.textContent = `${score}`;
     if (linesElement) linesElement.textContent = `${lines}`;
+    if (score >= 100000 && !rocketShown) {
+        launchRocket();
+    }
 }
 
 function saveScore() {
@@ -237,7 +259,8 @@ function handleGameOverInput(e) {
         resetGame();
     } else if (e.key === "m" || e.key === "M") {
         document.removeEventListener("keydown", handleGameOverInput);
-        window.location.href = "index.html"; // Retour au menu principal
+        const debugQuery = isDebug ? "?debug=true" : "";
+        window.location.href = `index.html${debugQuery}`; // Retour au menu principal
     }
 }
 
@@ -248,6 +271,7 @@ function resetGame() {
     board = Array.from({ length: rows }, () => Array(cols).fill(0));
     score = 0;
     lines = 0;
+    rocketShown = false;
     resetPiece();
     update();
     if (!muted) music.play();
@@ -410,10 +434,7 @@ function drawNextPieces() {
         shape.forEach((row, y) => row.forEach((value, x) => {
             if (value) {
                 const color = colors[value];
-                ctx.fillStyle = color;
-                ctx.fillRect(x * grid, y * grid, grid, grid);
-                ctx.strokeStyle = "black";
-                ctx.strokeRect(x * grid, y * grid, grid, grid);
+                drawStyledBlock(ctx, x, y, grid, color);
             }
         }));
     });
@@ -427,20 +448,55 @@ function drawHoldPiece() {
     shape.forEach((row, y) => row.forEach((value, x) => {
         if (value) {
             const color = colors[value];
-            holdCtx.fillStyle = color;
-            holdCtx.fillRect(x * grid, y * grid, grid, grid);
-            holdCtx.strokeStyle = "black";
-            holdCtx.strokeRect(x * grid, y * grid, grid, grid);
+            drawStyledBlock(holdCtx, x, y, grid, color);
         }
     }));
 }
 
-// Dessine un bloc individuel
+// Dessine un bloc individuel avec un leger padding pour un rendu plus fin
 function drawBlock(x, y, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x * grid, y * grid, grid, grid);
-    ctx.strokeStyle = "black";
-    ctx.strokeRect(x * grid, y * grid, grid, grid);
+    drawStyledBlock(ctx, x, y, grid, color);
+}
+
+function drawStyledBlock(context, x, y, size, color) {
+    const pad = 2;
+    context.fillStyle = color;
+    context.fillRect(x * size + pad, y * size + pad, size - pad * 2, size - pad * 2);
+    context.strokeStyle = "#555";
+    context.strokeRect(x * size + pad, y * size + pad, size - pad * 2, size - pad * 2);
+}
+
+// Supprime les 10 lignes du bas
+function clearLastTenLines() {
+    if (!gameRunning) return;
+    board.splice(rows - 10, 10);
+    for (let i = 0; i < 10; i++) {
+        board.unshift(Array(cols).fill(0));
+    }
+    lines = Math.max(0, lines - 10);
+    updateScoreDisplay();
+    drawBoard();
+}
+
+// Anime une fusee lorsque le score atteint 100000
+function launchRocket() {
+    rocketShown = true;
+    const rocket = document.createElement('div');
+    rocket.className = 'rocket';
+    rocket.textContent = '🚀';
+    document.body.appendChild(rocket);
+    requestAnimationFrame(() => {
+        rocket.style.bottom = '110%';
+    });
+    setTimeout(() => rocket.remove(), 3000);
+}
+
+// Force la creation d'un Tetris pour le debug
+function forceTetris() {
+    for (let y = rows - 4; y < rows; y++) {
+        board[y] = Array(cols).fill(1);
+    }
+    clearLines();
 }
 
 // Met à jour l'état du jeu
@@ -501,6 +557,19 @@ document.addEventListener("keydown", (e) => {
         case "M":
             toggleMute();
             break;
+        case "l":
+        case "L":
+            clearLastTenLines();
+            break;
+    }
+
+    if (isDebug) {
+        if (e.key === 't' || e.key === 'T') {
+            forceTetris();
+        }
+        if (e.key === 'r' || e.key === 'R') {
+            launchRocket();
+        }
     }
 });
 

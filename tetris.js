@@ -1,3 +1,4 @@
+// Gestion complete du Tetris avec mode debug, publicite apres le cheat et fusee a 100000 points
 const canvas = document.getElementById("tetrisCanvas");
 const ctx = canvas.getContext("2d");
 const holdCanvas = document.getElementById("holdCanvas");

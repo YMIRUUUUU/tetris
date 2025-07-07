@@ -22,6 +22,10 @@ let isPaused = false;
 let muted = false;
 let holdPiece = null;
 let holdUsed = false;
+
+=======
+let lineClearAdUsed = false; // track if the 10 line clear option was used
+
 let rocketShown = false; // track if rocket animation already launched
 let isDebug = false; // debug mode flag
 
@@ -89,12 +93,15 @@ function initializeGame() {
     if (isDebug) {
         const debugMsg = document.getElementById("debugMessage");
         if (debugMsg) debugMsg.style.display = "block";
+
         const panel = document.getElementById("debugPanel");
         if (panel) panel.style.display = "flex";
         const dbgTet = document.getElementById("debugTetris");
         const dbgRkt = document.getElementById("debugRocket");
         if (dbgTet) dbgTet.addEventListener("click", forceTetris);
         if (dbgRkt) dbgRkt.addEventListener("click", launchRocket);
+=======
+
     }
 }
 
@@ -231,8 +238,15 @@ function saveScore() {
 function gameOver() {
     gameRunning = false;
     music.pause();
-    saveScore();
-    drawGameOverScreen();
+    const finish = () => {
+        saveScore();
+        drawGameOverScreen();
+    };
+    if (lineClearAdUsed) {
+        showAdvertisement(finish);
+    } else {
+        finish();
+    }
 }
 
 // Affiche l'écran de Game Over avec des options
@@ -271,6 +285,10 @@ function resetGame() {
     board = Array.from({ length: rows }, () => Array(cols).fill(0));
     score = 0;
     lines = 0;
+
+=======
+    lineClearAdUsed = false;
+
     rocketShown = false;
     resetPiece();
     update();
@@ -476,6 +494,57 @@ function clearLastTenLines() {
     lines = Math.max(0, lines - 10);
     updateScoreDisplay();
     drawBoard();
+}
+
+// Anime une fusee lorsque le score atteint 100000
+function launchRocket() {
+    rocketShown = true;
+    const rocket = document.createElement('div');
+    rocket.className = 'rocket';
+    rocket.textContent = '🚀';
+    document.body.appendChild(rocket);
+    requestAnimationFrame(() => {
+        rocket.style.bottom = '110%';
+    });
+    setTimeout(() => rocket.remove(), 3000);
+}
+
+// Force la creation d'un Tetris pour le debug
+function forceTetris() {
+    for (let y = rows - 4; y < rows; y++) {
+        board[y] = Array(cols).fill(1);
+    }
+    clearLines();
+}
+
+// Supprime les 10 lignes du bas en échange d'une pub finale
+function clearLastTenLines() {
+    if (!gameRunning) return;
+    board.splice(rows - 10, 10);
+    for (let i = 0; i < 10; i++) {
+        board.unshift(Array(cols).fill(0));
+    }
+
+    lineClearAdUsed = true;
+    drawBoard();
+}
+
+// Affiche une pub d'une minute avant l'ecran de Game Over
+function showAdvertisement(callback) {
+    const overlay = document.createElement('div');
+    overlay.className = 'ad-overlay';
+    overlay.innerHTML = '<p>Publicité... <span id="adTimer">60</span>s</p>';
+    document.body.appendChild(overlay);
+    let remaining = 60;
+    const interval = setInterval(() => {
+        remaining--;
+        document.getElementById('adTimer').textContent = remaining;
+        if (remaining <= 0) {
+            clearInterval(interval);
+            overlay.remove();
+            callback();
+        }
+    }, 1000);
 }
 
 // Anime une fusee lorsque le score atteint 100000

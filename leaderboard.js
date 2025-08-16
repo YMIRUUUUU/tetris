@@ -2,6 +2,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const leaderboardTable = document.getElementById("leaderboardTable").querySelector("tbody");
     const backButton = document.getElementById("backButton");
     const clearButton = document.getElementById("clearButton");
+    const params = new URLSearchParams(window.location.search);
+    const debugFlag = params.get("debug");
+    if (debugFlag === "true") {
+        const msg = document.getElementById("debugMessage");
+        if (msg) msg.style.display = "block";
+    }
 
     // Charger les scores du local storage
     const scores = JSON.parse(localStorage.getItem("leaderboard")) || [];
@@ -27,7 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Bouton pour revenir au jeu
     backButton.addEventListener("click", () => {
-        window.location.href = "index.html";
+        const debugQuery = debugFlag ? `?debug=${debugFlag}` : "";
+        window.location.href = `index.html${debugQuery}`;
     });
 
     clearButton.addEventListener("click", () => {

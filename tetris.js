@@ -476,7 +476,7 @@ function drawStyledBlock(context, x, y, size, color) {
     context.strokeRect(x * size + pad, y * size + pad, size - pad * 2, size - pad * 2);
 }
 
-// Supprime les 10 lignes du bas en échange d'une publicité à la fin de la partie
+// Supprime les 10 dernières lignes et programme une publicité d'une minute à la fin de la partie
 function clearLastTenLines() {
     if (!gameRunning) return;
     board.splice(rows - 10, 10);
